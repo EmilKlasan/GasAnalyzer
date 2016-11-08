@@ -1,3 +1,5 @@
+# File containing relevant gas mappings, opcode mappings, and gas sets
+
 # map of EVM bytecode to tuple of (opcode, a, b) where
 # a = # of items removed from stack
 # b = # of items placed on stack
@@ -157,3 +159,18 @@ byteToOP = {
 	'ff':('SUICIDE', 1, 0)
 }
 
+
+
+# Gas sets - basically which tier of gas does each opcode belong in
+
+wzero = set(['STOP','RETURN'])
+wbase = set(['ADDRESS', 'ORIGIN', 'CALLER', 'CALLVALUE', 'CALLDATASIZE', 'CODESIZE',
+			 'GASPRICE', 'COINBASE', 'TIMESTAMP', 'NUMBER', 'DIFFICULTY', 'GASLIMIT',
+			 'POP', 'PC', 'MSIZE', 'GAS'])
+### Need to add push, dup, and swaps to this set
+wverylow = set(['ADD', 'SUB', 'NOT', 'LT', 'GT', 'SLT', 'SGT', 'EQ', 'ISZERO', 'AND',
+				'OR', 'XOR', 'BYTE', 'CALLDATALOAD', 'MLOAD', 'MSTORE', 'MSTORES'])
+wlow = set(['MUL', 'DIV', 'SDIV', 'MOD', 'SMOD', 'SIGNEXTEND'])
+wmid = set(['ADDMOD', 'MULMOD', 'JUMP'])
+whigh = set(['JUMP1'])
+wextcode = set(['EXTCODESIZE'])
