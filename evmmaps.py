@@ -167,9 +167,15 @@ wzero = set(['STOP','RETURN'])
 wbase = set(['ADDRESS', 'ORIGIN', 'CALLER', 'CALLVALUE', 'CALLDATASIZE', 'CODESIZE',
 			 'GASPRICE', 'COINBASE', 'TIMESTAMP', 'NUMBER', 'DIFFICULTY', 'GASLIMIT',
 			 'POP', 'PC', 'MSIZE', 'GAS'])
-### Need to add push, dup, and swaps to this set
+
 wverylow = set(['ADD', 'SUB', 'NOT', 'LT', 'GT', 'SLT', 'SGT', 'EQ', 'ISZERO', 'AND',
 				'OR', 'XOR', 'BYTE', 'CALLDATALOAD', 'MLOAD', 'MSTORE', 'MSTORES'])
+for i in range(1,33):
+	wverylow.add('PUSH'+str(i))
+	if i <= 16:
+		wverylow.add('DUP'+str(i))
+		wverylow.add('SWAP'+str(i))
+
 wlow = set(['MUL', 'DIV', 'SDIV', 'MOD', 'SMOD', 'SIGNEXTEND'])
 wmid = set(['ADDMOD', 'MULMOD', 'JUMP'])
 whigh = set(['JUMP1'])
