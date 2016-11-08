@@ -174,3 +174,43 @@ wlow = set(['MUL', 'DIV', 'SDIV', 'MOD', 'SMOD', 'SIGNEXTEND'])
 wmid = set(['ADDMOD', 'MULMOD', 'JUMP'])
 whigh = set(['JUMP1'])
 wextcode = set(['EXTCODESIZE'])
+
+
+# Gas prices - cost per operation is a function of these prices
+gasToPrices = {
+	'GZERO':0,
+	'GBASE':2,
+	'GVERYLOW':3,
+	'GLOW':5,
+	'GMID':8,
+	'GHIGH':10,
+	'GEXTCODE':700,
+	'GBALANCE':400,
+	'GSLOAD':200,
+	'GJUMPDEST':1,
+	'GSSET':20000,
+	'GRESET':5000,
+	'RSCLEAR':15000,
+	'RSUICIDE':24000,
+	'GSUICIDE':5000,
+	'GCREATE':32000,
+	'GCODEDEPOSIT':200,
+	'GCALL':700,
+	'GCALLVALUE':9000,
+	'GCALLSTIPEND':2300,
+	'GNEWACCOUNT':25000,
+	'GEXP':10,
+	'GEXPBYTE':10,
+	'GMEMORY':3,
+	'GTXCREATE':32000,
+	'GTXDATAZERO':4,
+	'GTXDATANONZERO':68,
+	'GTRANSACTION':21000,
+	'GLOG':375,
+	'GLOGDATA':8,
+	'GLOGTOPIC':375,
+	'GSHA3':30,
+	'GSHA3WORD':6,
+	'GCOPY':3,
+	'GBLOCKHASH':20
+}
