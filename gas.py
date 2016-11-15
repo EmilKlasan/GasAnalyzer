@@ -1,21 +1,32 @@
 import evmmaps
 
-# Calculates gas cost given an op code, currently using 
-def calculateGas(str opCode):
-  if opCode in evmmaps.wzero:
+# Calculates gas cost given an op code, still need  to consider 
+# operations that have costs dependent on the stack
+def calculateGas(opCode):
+  if opCode == 'CREATE':
+    return evmmaps.gasToPrices['GCREATE']
+  elif opCode == 'JUMPDEST':
+    return evmmaps.gasToPrices['GJUMPDEST']
+  elif opCode == 'SLOAD':
+    return evmmaps.gasToPrices['GSLOAD']
+  elif opCode in evmmaps.wzero:
     return evmmaps.gasToPrices['GZERO']
-  else if opCode in evmmaps.wbase:
+  elif opCode in evmmaps.wbase:
     return evmmaps.gasToPrices['GBASE']
-  else if opCode in evmmaps.wverylow:
+  elif opCode in evmmaps.wverylow:
     return evmmaps.gasToPrices['GVERYLOW']
-  else if opCode in evmmaps.wlow:
+  elif opCode in evmmaps.wlow:
     return evmmaps.gasToPrices['GLOW']
-  else if opCode in evmmaps.wmid:
+  elif opCode in evmmaps.wmid:
     return evmmaps.gasToPrices['GMID']
-  else if opCode in evmmaps.whigh:
+  elif opCode in evmmaps.whigh:
     return evmmaps.gasToPrices['GHIGH']
-  else if opCode in evmmaps.wextcode:
+  elif opCode in evmmaps.wextcode:
     return evmmaps.gasToPrices['GEXTCODE']
+  elif opCode == 'BALANCE':
+    return evmmaps.gasToPrices['GBALANCE']
+  elif opCode == 'BLOCKHASH':
+    return evmmaps.gasToPrices['GBLOCKHASH']
   # for now
-  else
+  else:
     return 0
