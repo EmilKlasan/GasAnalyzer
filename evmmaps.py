@@ -67,7 +67,7 @@ byteToOP = {
   '54':('SLOAD', 1, 1),
   '55':('SSTORE', 2, 0),
   '56':('JUMP', 1, 0),
-  '57':('JUMP1', 2, 0),
+  '57':('JUMPI', 2, 0),
   '58':('PC', 0, 1),
   '59':('MSIZE', 0, 1),
   '5a':('GAS', 0, 1),
@@ -178,7 +178,7 @@ for i in range(1,33):
 
 wlow = set(['MUL', 'DIV', 'SDIV', 'MOD', 'SMOD', 'SIGNEXTEND'])
 wmid = set(['ADDMOD', 'MULMOD', 'JUMP'])
-whigh = set(['JUMP1'])
+whigh = set(['JUMPI'])
 wextcode = set(['EXTCODESIZE'])
 
 

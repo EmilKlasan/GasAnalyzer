@@ -1,4 +1,5 @@
 import evmmaps
+debug = True
 
 # Calculates gas cost given an op code, still need  to consider 
 # operations that have costs dependent on the stack. These require
@@ -10,34 +11,29 @@ import evmmaps
 # Note that not every opcode needs new memory, so for some opcodes
 # CMem(new) - CMem(old) is just 0 and we're only concerned with
 # the piecewise function
+
 def calculateGas(opCode, stack):
-  if opCode == 'CREATE':
-    return evmmaps.gasToPrices['GCREATE']
-  elif opCode == 'JUMPDEST':
-    return evmmaps.gasToPrices['GJUMPDEST']
-  elif opCode == 'SLOAD':
-    return evmmaps.gasToPrices['GSLOAD']
-  elif opCode in evmmaps.wzero:
-    return evmmaps.gasToPrices['GZERO']
-  elif opCode in evmmaps.wbase:
-    return evmmaps.gasToPrices['GBASE']
-  elif opCode in evmmaps.wverylow:
-    return evmmaps.gasToPrices['GVERYLOW']
-  elif opCode in evmmaps.wlow:
-    return evmmaps.gasToPrices['GLOW']
-  elif opCode in evmmaps.wmid:
-    return evmmaps.gasToPrices['GMID']
-  elif opCode in evmmaps.whigh:
-    return evmmaps.gasToPrices['GHIGH']
-  elif opCode in evmmaps.wextcode:
-    return evmmaps.gasToPrices['GEXTCODE']
-  elif opCode == 'BALANCE':
-    return evmmaps.gasToPrices['GBALANCE']
-  elif opCode == 'BLOCKHASH':
-    return evmmaps.gasToPrices['GBLOCKHASH']
-  # for now
-  else:
-    return 0
+  return {
+    # The simple ones that are pretty much constant
+    'STOP': evmmaps.gasToPrices['GZERO'],
+    'SLOAD': evmmaps.gasToPrices['GSLOAD'],
+    'BALANCE': evmmaps.gasToPrices['GBALANCE'],
+    # SSTORE and SUICIDE have some nuances, will look at later
+
+    # Ops that interact with memory
+    # The gas price of the operation depending on the tier + if we need more memory
+    # Not copy operations
+    # first argument of calc mem gas is wrong right now, should not be using len(stack)
+    # need to figure out how memory works
+    'MSTORE': (evmmaps.gasToPrices['GVERYLOW'] + calcMemGas(len(stack), memNeeded(stack[-1], 32), 0)),
+    'MSTORE8': (evmmaps.gasToPrices['GVERYLOW'] + calcMemGas(len(stack), memNeeded(stack[-1], 1), 0)), # 1 byte
+    'MLOAD': (evmmaps.gasToPrices['GVERYLOW'] + calcMemGas(len(stack), memNeeded(stack[-1], 32), 0)),
+    'RETURN': (evmmaps.gasToPrices['GZERO'] + calcMemGas(len(stack), memNeeded(stack[-1], stack[-2]), 0)),
+    # Cost for SHA3 = GSHA3 + GSHA3WORD * (s[1] / 32) + mem costs
+    'SHA3': (evmmaps.gasToPrices['GSHA3'] + (evmmaps.gasToPrices['GSHA3WORD'] * ((stack[-2] + 31) / 32)) +
+            calcMemGas(len(stack), memNeeded(stack[-1], stack[-2]), 0))
+
+  }.get(opCode, 0)
 
 ### The memory functions here are pretty similar to the java implementation of the evm
 ### https://github.com/ethereum/ethereumj/blob/develop/ethereumj-core/src/main/java/org/ethereum/vm/VM.java
@@ -56,10 +52,16 @@ def calcMemGas(oldMem, newMem, copySize):
   if memUse > oldMem:
     memWords = memUse / 32
     oldMemWords = oldMem / 32
-    memCost += ((evmmaps.gasToPrices['GMEMORY'] * memWords + (memWords ** 2) / 512) - 
-                (evmmaps.gasToPrices['GMEMORY'] * oldMemWords + (oldMemWords ** 2) / 512))
+    newMemCost = (evmmaps.gasToPrices['GMEMORY'] * memWords + (memWords ** 2) / 512)
+    oldMemCost = (evmmaps.gasToPrices['GMEMORY'] * oldMemWords + (oldMemWords ** 2) / 512)
+    if debug:
+      print 'NEW MEM COST: {}'.format(newMemCost)
+      print 'OLD MEM COST: {}'.format(oldMemCost)
+    memCost += newMemCost
 
-
+  # Copy operations have extra costs along with memory costs, rounded up
+  if copySize > 0:
+    memCost += evmmaps.gasToPrices['GCOPY'] * ((copySize + 31) / 32)
 
   return memCost
 
@@ -68,5 +70,7 @@ def calcMemGas(oldMem, newMem, copySize):
 # Calculates the current stack offset + the size of mem needed
 # And returns a new memory size. Returns 0 if size needed is 0.
 def memNeeded(offset, size):
+  if debug:
+    print 'OFFSET: {}\nSIZE: {}'.format(offset,size)
   return 0 if size == 0 else offset + size
 
