@@ -30,6 +30,14 @@ def convertToOpcodes(items):
     opcodes.append(op)
   return opcodes
 
+def getFunctionHashes(opcodes):
+  funcs = []
+  for x in opcodes:
+    op = x[0]
+    if len(op) == 15 and op[:4] == "PUSH":
+      funcs.append(op[7:])
+  return funcs
+
 ###################################################
 
 arithOps = ["ADD",
@@ -119,6 +127,8 @@ def traverseProgram(items):
       handleMemoryOps(item, stack, memory)
     elif op in storOps:
       handleStorageOps(item, stack, storage)
+    elif op == "JUMPDEST":
+      pass
     elif op == "POP":
       stack.pop()
     elif op == "PC":
@@ -136,7 +146,7 @@ def traverseProgram(items):
       stack[-1]   = tmp
     elif op[:3] == "LOG":
       pass
-    
+
 
     #gasCost = gasCost + calculateGasCost(item[0])
     i += 1
@@ -285,13 +295,19 @@ def handleStorageOps(item, stack, storage):
 
 #############################################
 
-def getFunctionHashes(opcodes):
-  funcs = []
-  for x in opcodes:
-    op = x[0]
-    if len(op) == 15 and op[:4] == "PUSH":
-      funcs.append(op[7:])
-  return funcs
+############ SYMBOLIC EXECUTION #############
+
+# EQ
+# PUSH [tag] 2
+# JUMPI 
+
+def takeBothPaths(destination, condition):
+  # JUMPI
+
+
+#############################################
+
+##################  MAIN  ###################
 
 # read input from stdin
 # separate into pairs
