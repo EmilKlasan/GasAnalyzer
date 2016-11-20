@@ -17,7 +17,6 @@ def jumpToLoc(adr, items):
   try:
     x = int(adr, 16)
   except TypeError:
-    print("hi")
     return -1, False
   return x, not isValidJumpTarget(x, items)
 
