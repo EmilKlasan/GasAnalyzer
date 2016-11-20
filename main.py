@@ -4,6 +4,12 @@ import sys
 import evmmaps
 from math import copysign
 import ctypes
+from symbolicinput import SymbolicInput
+
+# id for symbolic input, decrements from -1 since everything
+# else on the stack will be positive for the EVM
+symId = -1
+symMap = {}
 
 ############### HELPER FUNCTIONS #################
 
@@ -254,12 +260,15 @@ boolMap = {
 ################ ENVIRONMENTAL OPS ##############
 
 def handleEnvOps(item, stack, memory):
-  pass
-  # func = envMap[item[0]]
-  # params = []
-  # for i in range(item[1]):
-    # params.insert(0, int(stack.pop(), 16))
-  # stack.append(toHex(func(params)))
+  func = envMap[item[0]]
+  #params = []
+  for i in range(item[1]):
+    params.insert(0, int(stack.pop(), 16))
+  if item[2] == 1:
+    x = SymbolicInput(symId)
+    x -= 1
+    stack.append(symId)
+  #stack.append(toHex(func(params)))
 
 
 ################ BLOCK OPS #################
