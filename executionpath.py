@@ -2,19 +2,14 @@ import helpers
 import ophandlers
 import oplists
 
-class Program:
-  def __init__(self, bytecode):
-    self.initialise(bytecode)
-
-  def initialise(self, bytecode, stack = [], memory = [], storage = {}):
-    start          = 2 if bytecode[:2] == "0x" else 0
-    pairs          = [bytecode[i:i + 2] for i in range(start, len(bytecode), 2)]
-    self.opcodes   = helpers.convertToOpcodes(pairs)
-    self.functions = helpers.getFunctionHashes(self.opcodes)
-    self.stack     = stack
-    self.memory    = memory
-    self.storage   = storage
-
+class ExecutionPath:
+  def __init__(self, opcodes, functions, stack = [], memory = [], storage = {}, symbols = []):
+    self.opcodes   = opcodes,
+    self.functions = functions,
+    self.stack     = stack,
+    self.memory    = memory,
+    self.storage   = storage,
+    self.symbols   = symbols
 
   def traverse(self):
     items   = self.opcodes
