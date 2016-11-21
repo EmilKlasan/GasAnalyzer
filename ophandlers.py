@@ -1,11 +1,13 @@
-
 import helpers
 import ctypes
+from symbolicinput import SymbolicInput
 from math import copysign
+
+symId = -1
 
 ################### JUMP OPS #####################
 
-def handleJumpOps(op, stack, items):
+def handleJumpOps(op, stack, items, symbols):
   adr = stack.pop()
   out = (-1, False)
   if op == "JUMP" or (op == "JUMPI" and int(stack.pop(), 16)):
@@ -28,14 +30,22 @@ invalidTargets = [2]
 
 ############### ARITHMETIC OPS #################
 
-def handleArithOps(item, stack):
-  func = arithMap[item[0]]
+def handleArithOps(item, stack, symbols):
   params = []
   for i in range(item[1]):
-    params.insert(0, int(stack.pop(), 16))
-  stack.append(helpers.toHex(func(params)))
+    p = stack.pop()
+    if p >= 0:
+      params.insert(0, int(p, 16))
+    else:
+      params.insert(0, p)
+  if params[0] > 0 and params[1] > 0:
+    func = arithMap[item[0]]
+    stack.append(helpers.toHex(func(params)))
+  else:
+    func = arithMapSym[item[0]]
+    stack.append(func(params, symbols))
 
-def signedDiv(params):
+def signedDiv(params, symbols):
   x = params[0]
   y = params[1]
   if not y:
@@ -45,7 +55,7 @@ def signedDiv(params):
   else:
     return copysign(abs(x / y), x / y)
 
-def signedMod(params):
+def signedMod(params, symbols):
   x = params[0]
   y = params[1]
   if y:
@@ -53,12 +63,32 @@ def signedMod(params):
   return y
 
 # need to check if this works
-def signExtend(params):
+def signExtend(params, symbols):
   x = params[0]
   i = params[1]
   sign_bit = 1 << (i - 1)
   return (x & (sign_bit - 1)) - (x & sign_bit)
 
+def simpleArith(op, params, symbols):
+  global symId
+  if params[0] < 0:
+    p0 = symbols[params[0]]
+    del symbols[params[0]]
+  else:
+    p0 = params[0]
+
+  if params[1] < 0:
+    p1 = symbols[params[1]]
+    del symbols[params[1]]
+  else:
+    p1 = params[1]
+
+  x = SymbolicInput(symId, op, p0, p1)
+  symbols[symId] = x
+  symId -= 1
+  return x.getId()
+
+# If no symbols
 arithMap = {
   "ADD":        lambda params: params[0] + params[1],
   "MUL":        lambda params: params[0] * params[1],
@@ -73,12 +103,27 @@ arithMap = {
   "SIGNEXTEND": signExtend
 }
 
+# If there's a symbol
+arithMapSym = {
+  "ADD":        lambda params, symbols: simpleArith('+', params, symbols),
+  "MUL":        lambda params, symbols: simpleArith('*', params, symbols),
+  "SUB":        lambda params, symbols: simpleArith('-', params, symbols),
+  "DIV":        lambda params, symbols: simpleArith('/', params, symbols),
+  "MOD":        lambda params: params[0] % params[1] if params[1] else 0,
+  "ADDMOD":     lambda params: (params[0] + params[1]) % params[2] if params[2] else 0,
+  "MULMOD":     lambda params: (params[0] * params[1]) % params[2] if params[2] else 0,
+  "EXP":        lambda params: params[0] ** params[1],
+  "SDIV":       signedDiv,
+  "SMOD":       signedMod,
+  "SIGNEXTEND": signExtend
+}
+
 ############### BOOLEAN OPS #################
 
 def makeUnsigned256(i):
     return ctypes.c_ubyte(i).value
 
-def handleBoolOp(item, stack):
+def handleBoolOp(item, stack, symbols):
   func = boolMap[item[0]]
   params = []
   for i in range(item[1]):
@@ -101,21 +146,28 @@ boolMap = {
 
 ################ ENVIRONMENTAL OPS ##############
 
-# def handleEnvOps(item, stack, memory):
-#   func = envMap[item[0]]
-#   #params = []
-#   for i in range(item[1]):
-#     params.insert(0, int(stack.pop(), 16))
-#   if item[2] == 1:
-#     x = SymbolicInput(symId)
-#     x -= 1
-#     stack.append(symId)
+def handleEnvOps(item, stack, memory, symbols, userIn):
+  #func = envMap[item[0]]
+  global symId
+  params = []
+  for i in range(item[1]):
+    p = stack.pop()
+    if p >= 0:
+      params.insert(0, int(p, 16))
+    else:
+      params.insert(0, p)
+  if item[2] == 1:
+    x = SymbolicInput(symId, 'id', None)
+    symbols[symId] = x
+    stack.append(symId)
+    userIn.append(symId)
+    symId -= 1
   #stack.append(helpers.toHex(func(params)))
 
 
 ################ BLOCK OPS #################
 
-def handleBlockOps(item, stack):
+def handleBlockOps(item, stack, symbols):
   pass
   # func = envMap[item[0]]
   # params = []
@@ -125,7 +177,7 @@ def handleBlockOps(item, stack):
 
 ################ MEMORY OPS ##############
 
-def handleMemoryOps(item, stack, memory):
+def handleMemoryOps(item, stack, memory, symbols):
   pass
   # func = envMap[item[0]]
   # params = []
@@ -135,7 +187,7 @@ def handleMemoryOps(item, stack, memory):
 
 ################ STORAGE OPS ##############
 
-def handleStorageOps(item, stack, storage):
+def handleStorageOps(item, stack, storage, symbols, userIn):
   pass
   # func = envMap[item[0]]
   # params = []

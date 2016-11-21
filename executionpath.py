@@ -3,19 +3,23 @@ import ophandlers
 import oplists
 
 class ExecutionPath:
-  def __init__(self, opcodes, functions, stack = [], memory = [], storage = {}, symbols = []):
-    self.opcodes   = opcodes,
-    self.functions = functions,
-    self.stack     = stack,
-    self.memory    = memory,
-    self.storage   = storage,
+  def __init__(self, opcodes, functions, stack = [], memory = [], storage = {}, symbols = {}, userIn = []):
+    self.opcodes   = opcodes
+    self.functions = functions
+    self.stack     = stack
+    self.memory    = memory
+    self.storage   = storage
     self.symbols   = symbols
+    self.userIn = userIn  # list of symbols that directly represent user input
+
 
   def traverse(self):
     items   = self.opcodes
     stack   = self.stack
     memory  = self.memory
     storage = self.storage
+    symbols = self.symbols
+    userIn = self.userIn
     gasCost = 0
     stop    = False
     i       = 0
@@ -25,24 +29,24 @@ class ExecutionPath:
       if op in oplists.terminalOps:
         break
       elif op in oplists.arithOps:
-        ophandlers.handleArithOps(item, stack)
+        ophandlers.handleArithOps(item, stack, symbols)
       elif op in oplists.boolOps:
-        ophandlers.handleBoolOp(item, stack)
+        ophandlers.handleBoolOp(item, stack, symbols)
       elif op == "SHA3":
         pass
       elif op in oplists.envOps:
-        pass# ophandlers.handleEnvOps(item, stack, memory)
+        ophandlers.handleEnvOps(item, stack, memory, symbols, userIn)
       elif op in oplists.blockOps:
-        ophandlers.handleBlockOps(item, stack)
+        ophandlers.handleBlockOps(item, stack, symbols)
       elif op in oplists.jumpOps:
-        result  = ophandlers.handleJumpOps(op, stack, items)
+        result  = ophandlers.handleJumpOps(op, stack, items, symbols)
         if result[0] != -1:
           i, stop = result
           continue
       elif op in oplists.memOps:
-        ophandlers.handleMemoryOps(item, stack, memory)
+        ophandlers.handleMemoryOps(item, stack, memory, symbols)
       elif op in oplists.storOps:
-        ophandlers.handleStorageOps(item, stack, storage)
+        ophandlers.handleStorageOps(item, stack, storage, symbols, userIn)
       elif op == "JUMPDEST":
         pass
       elif op == "POP":
@@ -63,6 +67,10 @@ class ExecutionPath:
       elif op[:3] == "LOG":
         pass
 
+      print item
+      print("Stack:")
+      helpers.prettyPrint(stack)
+      print ''
 
       #gasCost = gasCost + calculateGasCost(item[0])
       i += 1
@@ -73,3 +81,7 @@ class ExecutionPath:
     helpers.prettyPrint(memory)
     print("Storage:")
     helpers.prettyPrint(storage)
+
+    for x in symbols:
+      print symbols[x].derive()
+
