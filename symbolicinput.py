@@ -14,10 +14,12 @@ class SymbolicInput:
   def generateOp(self, op, arg1, arg2):
     return {
       'id': ('id', self.symId, arg1),
-      '+': ('+', arg1, arg2),
-      '-': ('-', arg1, arg2),
-      '*': ('*', arg1, arg2),
-      '/': ('/', arg1, arg2)
+      'Add': ('Add', arg1, arg2),
+      'Sub': ('Sub', arg1, arg2),
+      'Mul': ('Mul', arg1, arg2),
+      'Div': ('Div', arg1, arg2),
+      'Mod': ('Mod', arg1, arg2),
+      'Exp': ('Exp', arg1, arg2)
     }.get(op, ('bad', arg1))
 
   def derive(self):
@@ -32,7 +34,7 @@ class SymbolicInput:
       arg1 = '{}'.format(self.opChain[1])
 
     if isinstance(self.opChain[2], SymbolicInput):
-      arg2 = opChain[1].derive()
+      arg2 = opChain[2].derive()
     else:
       arg2 = '{}'.format(self.opChain[2])
 

@@ -83,5 +83,7 @@ class ExecutionPath:
     helpers.prettyPrint(storage)
 
     for x in symbols:
+      print ''
+      print 'symbol {}:'.format(x)
       print symbols[x].derive()
 

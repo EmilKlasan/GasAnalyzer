@@ -39,8 +39,13 @@ def handleArithOps(item, stack, symbols):
     else:
       params.insert(0, p)
   if params[0] > 0 and params[1] > 0:
-    func = arithMap[item[0]]
-    stack.append(helpers.toHex(func(params)))
+    # if there are 3 params and the 3rd one is a symbol
+    if len(params) == 3 and params[2] < 0:
+      func = arithMapSym(item[0])
+      stack.append(func(params, symbols))
+    else:
+      func = arithMap[item[0]]
+      stack.append(helpers.toHex(func(params)))
   else:
     func = arithMapSym[item[0]]
     stack.append(func(params, symbols))
@@ -69,7 +74,8 @@ def signExtend(params, symbols):
   sign_bit = 1 << (i - 1)
   return (x & (sign_bit - 1)) - (x & sign_bit)
 
-def simpleArith(op, params, symbols):
+# Arithmetic operations with 2 args
+def param2Arith(op, params, symbols):
   global symId
   if params[0] < 0:
     p0 = symbols[params[0]]
@@ -84,6 +90,29 @@ def simpleArith(op, params, symbols):
     p1 = params[1]
 
   x = SymbolicInput(symId, op, p0, p1)
+  symbols[symId] = x
+  symId -= 1
+  return x.getId()
+
+# Functions that take in 3 args for mods: add mod and mul mod
+def mod3Arith(op, params, symbols):
+  global symId
+
+  # Get result of first operation
+  if params[0] or params[1] < 0:
+    sid = param2Arith(op, params[:2], symbols)
+    p1p2 = symbols[sid]
+    del symbols[sid]
+  else:
+    p1p2 = arithMap[op](params[:1])
+
+  if params[2] < 0:
+    p3 = symbols[params[2]]
+    del symbols[params[2]]
+  else:
+    p3 = params[2]
+
+  x = SymbolicInput(symId, 'Mod', p1p2, p3)
   symbols[symId] = x
   symId -= 1
   return x.getId()
@@ -105,14 +134,14 @@ arithMap = {
 
 # If there's a symbol
 arithMapSym = {
-  "ADD":        lambda params, symbols: simpleArith('+', params, symbols),
-  "MUL":        lambda params, symbols: simpleArith('*', params, symbols),
-  "SUB":        lambda params, symbols: simpleArith('-', params, symbols),
-  "DIV":        lambda params, symbols: simpleArith('/', params, symbols),
-  "MOD":        lambda params: params[0] % params[1] if params[1] else 0,
-  "ADDMOD":     lambda params: (params[0] + params[1]) % params[2] if params[2] else 0,
-  "MULMOD":     lambda params: (params[0] * params[1]) % params[2] if params[2] else 0,
-  "EXP":        lambda params: params[0] ** params[1],
+  "ADD":        lambda params, symbols: param2Arith('Add', params, symbols),
+  "MUL":        lambda params, symbols: param2Arith('Mul', params, symbols),
+  "SUB":        lambda params, symbols: param2Arith('Sub', params, symbols),
+  "DIV":        lambda params, symbols: param2Arith('Div', params, symbols),
+  "MOD":        lambda params, symbols: param2Arith('Mod', params, symbols),
+  "ADDMOD":     lambda params, symbols: mod3Arith('Add', params, symbols),
+  "MULMOD":     lambda params, symbols: mod3Arith('Mul', params, symbols),
+  "EXP":        lambda params, symbols: param2Arith('Exp', params, symbols),
   "SDIV":       signedDiv,
   "SMOD":       signedMod,
   "SIGNEXTEND": signExtend
