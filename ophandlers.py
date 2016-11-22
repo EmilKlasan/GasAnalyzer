@@ -153,12 +153,30 @@ def makeUnsigned256(i):
     return ctypes.c_ubyte(i).value
 
 def handleBoolOp(item, stack, symbols):
-  func = boolMap[item[0]]
   params = []
   for i in range(item[1]):
-    params.insert(0, int(stack.pop(), 16))
-  stack.append(helpers.toHex(func(params)))
+    p = stack.pop()
+    if p >= 0:
+      params.insert(0, int(p, 16))
+    else:
+      params.insert(0, p)
 
+  # if only one arg
+  if len(params) == 1:
+    if params[0] < 0:
+      func = boolMapSym[item[0]]
+      stack.append(func(params, symbols))
+    else:
+      func = boolMap[item[0]]
+      stack.append(helpers.toHex(func(params)))
+  elif params[0] > 0 and params[1] > 0:
+    func = boolMap[item[0]]
+    stack.append(helpers.toHex(func(params)))
+  else:
+    func = boolMapSym[item[0]]
+    stack.append(func(params, symbols))
+
+# Boolmap for normal operations
 boolMap = {
   "LT":     lambda params: makeUnsigned256(params[0]) < makeUnsigned256(params[1]),
   "GT":     lambda params: makeUnsigned256(params[0]) > makeUnsigned256(params[1]),
@@ -171,6 +189,21 @@ boolMap = {
   "XOR":    lambda params: params[0] ^ params[1],
   "NOT":    lambda params: params[0],
   "BYTE":   lambda params: (params[1] >> (8 * params[0])) & 0xFF
+}
+
+# Boolmap for operations with symbols
+boolMapSym = {
+  "LT":     lambda params, symbols: makeUnsigned256(params[0]) < makeUnsigned256(params[1]),
+  "GT":     lambda params, symbols: makeUnsigned256(params[0]) > makeUnsigned256(params[1]),
+  "SLT":    lambda params: params[0] < params[1], #TODO
+  "SGT":    lambda params: params[0] > params[1], #TODO
+  "EQ":     lambda params, symbols: params[0] == params[1],
+  "ISZERO": lambda params, symbols: not params[0],
+  "AND":    lambda params, symbols: params[0] & params[1],
+  "OR":     lambda params, symbols: params[0] | params[1],
+  "XOR":    lambda params, symbols: params[0] ^ params[1],
+  "NOT":    lambda params, symbols: params[0],
+  "BYTE":   lambda params, symbols: (params[1] >> (8 * params[0])) & 0xFF
 }
 
 ################ ENVIRONMENTAL OPS ##############
