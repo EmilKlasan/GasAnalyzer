@@ -74,8 +74,8 @@ def signExtend(params, symbols):
   sign_bit = 1 << (i - 1)
   return (x & (sign_bit - 1)) - (x & sign_bit)
 
-# Arithmetic operations with 2 args
-def param2Arith(op, params, symbols):
+# Simple 2 argument operations involving symbols
+def param2Simple(op, params, symbols):
   global symId
   if params[0] < 0:
     p0 = symbols[params[0]]
@@ -94,13 +94,26 @@ def param2Arith(op, params, symbols):
   symId -= 1
   return x.getId()
 
+def param1Simple(op, params, symbols):
+  global symId
+  if params[0] < 0:
+    p0 = symbols[params[0]]
+    del symbols[params[0]]
+  else:
+    p0 = params[0]
+
+  x = SymbolicInput(symId, op, p0, None)
+  symbols[symId] = x
+  symId -= 1
+  return x.getId()
+
 # Functions that take in 3 args for mods: add mod and mul mod
 def mod3Arith(op, params, symbols):
   global symId
 
   # Get result of first operation
   if params[0] or params[1] < 0:
-    sid = param2Arith(op, params[:2], symbols)
+    sid = param2Simple(op, params[:2], symbols)
     p1p2 = symbols[sid]
     del symbols[sid]
   else:
@@ -134,14 +147,14 @@ arithMap = {
 
 # If there's a symbol
 arithMapSym = {
-  "ADD":        lambda params, symbols: param2Arith('Add', params, symbols),
-  "MUL":        lambda params, symbols: param2Arith('Mul', params, symbols),
-  "SUB":        lambda params, symbols: param2Arith('Sub', params, symbols),
-  "DIV":        lambda params, symbols: param2Arith('Div', params, symbols),
-  "MOD":        lambda params, symbols: param2Arith('Mod', params, symbols),
+  "ADD":        lambda params, symbols: param2Simple('Add', params, symbols),
+  "MUL":        lambda params, symbols: param2Simple('Mul', params, symbols),
+  "SUB":        lambda params, symbols: param2Simple('Sub', params, symbols),
+  "DIV":        lambda params, symbols: param2Simple('Div', params, symbols),
+  "MOD":        lambda params, symbols: param2Simple('Mod', params, symbols),
   "ADDMOD":     lambda params, symbols: mod3Arith('Add', params, symbols),
   "MULMOD":     lambda params, symbols: mod3Arith('Mul', params, symbols),
-  "EXP":        lambda params, symbols: param2Arith('Exp', params, symbols),
+  "EXP":        lambda params, symbols: param2Simple('Exp', params, symbols),
   "SDIV":       signedDiv,
   "SMOD":       signedMod,
   "SIGNEXTEND": signExtend
@@ -169,12 +182,33 @@ def handleBoolOp(item, stack, symbols):
     else:
       func = boolMap[item[0]]
       stack.append(helpers.toHex(func(params)))
-  elif params[0] > 0 and params[1] > 0:
+  elif params[0] >= 0 and params[1] >= 0: # 2 nonsymbolic args
     func = boolMap[item[0]]
     stack.append(helpers.toHex(func(params)))
   else:
     func = boolMapSym[item[0]]
     stack.append(func(params, symbols))
+
+def ltgt(op, params, symbols):
+  global symId
+  if params[0] < 0:
+    p0 = symbols[params[0]]
+    del symbols[params[0]]
+  else:
+    p0 = params[0]
+    makeUnsigned256(p0)
+
+  if params[1] < 0:
+    p1 = symbols[params[1]]
+    del symbols[params[1]]
+  else:
+    p1 = params[1]
+    makeUnsigned256(p1)
+
+  x = SymbolicInput(symId, op, p0, p1)
+  symbols[symId] = x
+  symId -= 1
+  return x.getId()
 
 # Boolmap for normal operations
 boolMap = {
@@ -193,17 +227,17 @@ boolMap = {
 
 # Boolmap for operations with symbols
 boolMapSym = {
-  "LT":     lambda params, symbols: makeUnsigned256(params[0]) < makeUnsigned256(params[1]),
-  "GT":     lambda params, symbols: makeUnsigned256(params[0]) > makeUnsigned256(params[1]),
+  "LT":     lambda params, symbols: ltgt('Lt', params, symbols),
+  "GT":     lambda params, symbols: ltgt('Gt', params, symbols),
   "SLT":    lambda params: params[0] < params[1], #TODO
   "SGT":    lambda params: params[0] > params[1], #TODO
-  "EQ":     lambda params, symbols: params[0] == params[1],
-  "ISZERO": lambda params, symbols: not params[0],
-  "AND":    lambda params, symbols: params[0] & params[1],
-  "OR":     lambda params, symbols: params[0] | params[1],
-  "XOR":    lambda params, symbols: params[0] ^ params[1],
-  "NOT":    lambda params, symbols: params[0],
-  "BYTE":   lambda params, symbols: (params[1] >> (8 * params[0])) & 0xFF
+  "EQ":     lambda params, symbols: param2Simple('Eq', params, symbols),
+  "ISZERO": lambda params, symbols: param1Simple('IsZero', params, symbols),
+  "AND":    lambda params, symbols: param2Simple('And', params, symbols),
+  "OR":     lambda params, symbols: param2Simple('Or', params, symbols),
+  "XOR":    lambda params, symbols: param2Simple('Xor', params, symbols),
+  "NOT":    lambda params, symbols: param1Simple('Not', params, symbols),
+  "BYTE":   lambda params, symbols: (params[1] >> (8 * params[0])) & 0xFF #TODO
 }
 
 ################ ENVIRONMENTAL OPS ##############

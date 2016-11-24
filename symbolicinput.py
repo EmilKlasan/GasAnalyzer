@@ -28,12 +28,12 @@ class SymbolicInput:
       'Lt': ('Lt', arg1, arg2),
       'Gt': ('Gt', arg1, arg2),
       'Eq': ('Eq', arg1, arg2),
-      'Iszero': ('Eq', arg1, 0),
       'And': ('And', arg1, arg2),
       'Or': ('Or', arg1, arg2),
       'Xor': ('Xor', arg1, arg2),
       'Not': ('Not', arg1),
-      'Byte': ('Byte', arg1, arg2)
+      'IsZero': ('IsZero', arg1)
+      #'Byte': ('Byte', arg1, arg2)
     }.get(op, ('bad', arg1))
 
   def derive(self):
@@ -48,7 +48,7 @@ class SymbolicInput:
       arg1 = '{}'.format(self.opChain[1])
 
     # If there is a second argument to process
-    if len(self.opChain[2]) > 2:
+    if len(self.opChain) > 2:
       if isinstance(self.opChain[2], SymbolicInput):
         arg2 = opChain[2].derive()
       else:
