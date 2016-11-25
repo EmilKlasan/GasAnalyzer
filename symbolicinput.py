@@ -20,22 +20,22 @@ class SymbolicInput:
       'Dup': ('Dup', arg1),
 
       # Arithmetic operations
-      'Add': ('Add', arg1, arg2),
-      'Sub': ('Sub', arg1, arg2),
-      'Mul': ('Mul', arg1, arg2),
-      'Div': ('Div', arg1, arg2),
-      'Mod': ('Mod', arg1, arg2),
-      'Exp': ('Exp', arg1, arg2),
+      'Add': ('+', arg1, arg2),
+      'Sub': ('-', arg1, arg2),
+      'Mul': ('*', arg1, arg2),
+      'Div': ('/', arg1, arg2),
+      'Mod': ('%', arg1, arg2),
+      'Exp': ('**', arg1, arg2),
 
       # Boolean
-      'Lt': ('Lt', arg1, arg2),
-      'Gt': ('Gt', arg1, arg2),
-      'Eq': ('Eq', arg1, arg2),
-      'And': ('And', arg1, arg2),
-      'Or': ('Or', arg1, arg2),
+      'Lt': ('<', arg1, arg2),
+      'Gt': ('>', arg1, arg2),
+      'Eq': ('==', arg1, arg2),
+      'And': ('&&', arg1, arg2),
+      'Or': ('||', arg1, arg2),
       'Xor': ('Xor', arg1, arg2),
-      'Not': ('Not', arg1),
-      'IsZero': ('IsZero', arg1)
+      'Not': ('!', arg1),
+      'IsZero': ('0 == ', arg1)
       #'Byte': ('Byte', arg1, arg2)
     }.get(op, ('bad', arg1))
 
@@ -57,8 +57,8 @@ class SymbolicInput:
       else:
         arg2 = '{}'.format(self.opChain[2])
     else:
-      return '{}({})'.format(self.opChain[0], arg1)
+      return '({}{})'.format(self.opChain[0], arg1)
 
-    return '{}({}, {})'.format(self.opChain[0], arg1, arg2)
+    return '({} {} {})'.format(arg1, self.opChain[0], arg2)
 
 
