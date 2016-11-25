@@ -39,21 +39,23 @@ class SymbolicInput:
       #'Byte': ('Byte', arg1, arg2)
     }.get(op, ('bad', arg1))
 
-  def derive(self):
+  def derive(self, count):
     opChain = self.opChain
     if opChain[0] == 'id':
-      return 'id(sym: {0}, uid: {1})'.format(self.opChain[1],self.opChain[2])
+      count[0] += 1
+      return 'x{}'.format(count[0])
+      # return 'id(sym: {0}, uid: {1})'.format(self.opChain[1],self.opChain[2])
 
     arg1 = ''
     if isinstance(self.opChain[1], SymbolicInput):
-      arg1 = opChain[1].derive()
+      arg1 = opChain[1].derive(count)
     else:
       arg1 = '{}'.format(self.opChain[1])
 
     # If there is a second argument to process
     if len(self.opChain) > 2:
       if isinstance(self.opChain[2], SymbolicInput):
-        arg2 = opChain[2].derive()
+        arg2 = opChain[2].derive(count)
       else:
         arg2 = '{}'.format(self.opChain[2])
     else:

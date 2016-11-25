@@ -34,13 +34,14 @@ def main():
     print(len(paths))
     steps += 1
 
-  count = 1
+  pathNum = 0
   for symbs in pathSymbols:
-    print('For path {}'.format(count))
+    count = [0]
+    print('For path {}'.format(pathNum))
     for x in symbs:
-      print 'symbol {}: {}'.format(x, symbs[x].derive())
+      print 'x{}: {}'.format(count[0] + 1, symbs[x].derive(count))
     print ''
-    count += 1
+    pathNum += 1
 
 if __name__ == "__main__":
     main()
