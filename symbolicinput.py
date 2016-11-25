@@ -16,6 +16,9 @@ class SymbolicInput:
       # Represents the base symbol, used when reading user input
       'id': ('id', self.symId, arg1),
 
+      # Other
+      'Dup': ('Dup', arg1),
+
       # Arithmetic operations
       'Add': ('Add', arg1, arg2),
       'Sub': ('Sub', arg1, arg2),

@@ -1,89 +1,152 @@
 import helpers
 import ophandlers
 import oplists
+from copy import deepcopy
 
 class ExecutionPath:
-  def __init__(self, opcodes, functions, stack = [], memory = [], storage = {}, symbols = {}, userIn = []):
+  def __init__(self, opcodes,
+                     functions,
+                     stack    = [],
+                     memory   = [],
+                     storage  = {},
+                     symbols  = {},
+                     userIn   = [],
+                     instrPtr = 1,
+                     symId    = [-1]):
     self.opcodes   = opcodes
     self.functions = functions
     self.stack     = stack
     self.memory    = memory
     self.storage   = storage
     self.symbols   = symbols
-    self.userIn = userIn  # list of symbols that directly represent user input
+    self.userIn    = userIn  # list of symbols that directly represent user input
+    self.instrPtr  = instrPtr # instruction pointer
+    self.symId     = symId
 
+  def takeJumpPath(self, pair, symbols):
+    # negate isZero, set new symbol, check/return for jumpdest
+    self.instrPtr = pair[1][0]
+    return ophandlers.makeJump(pair[0], symbols, self.symId)
 
-  def traverse(self):
-    items   = self.opcodes
-    stack   = self.stack
-    memory  = self.memory
-    storage = self.storage
-    symbols = self.symbols
-    userIn = self.userIn
+  def traverse(self, pathSymbols):
     gasCost = 0
     stop    = False
-    i       = 0
     while not stop:
-      item = items[i]
+      if self.instrPtr == 2:
+        break
+      item = self.opcodes[self.instrPtr]
       op   = item[0]
       if op in oplists.terminalOps:
         break
       elif op in oplists.arithOps:
-        ophandlers.handleArithOps(item, stack, symbols)
+        ophandlers.handleArithOps(item,
+                                  self.stack,
+                                  self.symbols,
+                                  self.symId)
       elif op in oplists.boolOps:
-        ophandlers.handleBoolOp(item, stack, symbols)
+        ophandlers.handleBoolOp(item,
+                                self.stack,
+                                self.symbols,
+                                self.symId)
       elif op == "SHA3":
         pass
       elif op in oplists.envOps:
-        ophandlers.handleEnvOps(item, stack, memory, symbols, userIn)
+        ophandlers.handleEnvOps(item,
+                                self.stack,
+                                self.memory,
+                                self.symbols,
+                                self.userIn,
+                                self.symId)
       elif op in oplists.blockOps:
-        ophandlers.handleBlockOps(item, stack, symbols)
+        ophandlers.handleBlockOps(item,
+                                  self.stack,
+                                  self.symbols)
       elif op in oplists.jumpOps:
-        result  = ophandlers.handleJumpOps(op, stack, items, symbols)
-        if result[0] != -1:
-          i, stop = result
+        result  = ophandlers.handleJumpOps(op,
+                                           self.stack,
+                                           self.opcodes,
+                                           self.symbols,
+                                           self.symId)
+        if result[0] != -1 and result[1] != -1:
+          self.instrPtr, stop = result
           continue
+        elif result[1] == -1:
+          # symbolic, need to split
+          self.instrPtr = item[-1]
+          # pass path-specific parameters by value
+          ep1 = ExecutionPath(self.opcodes,
+                              self.functions,
+                              self.stack[:],
+                              self.memory[:],
+                              deepcopy(self.storage),
+                              deepcopy(self.symbols),
+                              self.userIn[:],
+                              self.instrPtr)
+          stop = ep1.takeJumpPath(result[0], self.symbols)
+          if stop:
+            return [self]
+          else:
+            # print(self.instrPtr)
+            print("splitting")
+            return [self, ep1]
       elif op in oplists.memOps:
-        ophandlers.handleMemoryOps(item, stack, memory, symbols)
+        ophandlers.handleMemoryOps(item,
+                                   self.stack,
+                                   self.memory,
+                                   self.symbols)
       elif op in oplists.storOps:
-        ophandlers.handleStorageOps(item, stack, storage, symbols, userIn)
+        ophandlers.handleStorageOps(item,
+                                    self.stack,
+                                    self.storage,
+                                    self.symbols,
+                                    self.userIn)
       elif op == "JUMPDEST":
         pass
       elif op == "POP":
-        stack.pop()
+        self.stack.pop()
       elif op == "PC":
-        stack.append(i)
+        self.stack.append(i)
       elif op[:4] == "PUSH":
         # push value to stack
-        stack.append(op[7:])
+        self.stack.append(op[7:])
       elif op[:3] == "DUP":
-        num = int(op[3:])
-        stack.append(stack[-num])
+        ophandlers.handleDupOp(op,
+                               self.symbols,
+                               self.stack,
+                               self.symId)
       elif op[:4] == "SWAP":
         num         = int(op[4:])
-        tmp         = stack[-num]
-        stack[-num] = stack[-1]
-        stack[-1]   = tmp
+        tmp         = self.stack[-num]
+        self.stack[-num] = self.stack[-1]
+        self.stack[-1]   = tmp
       elif op[:3] == "LOG":
         pass
 
-      print item
-      print("Stack:")
-      helpers.prettyPrint(stack)
-      print ''
+      # print(self)
+      # print item
+      # print("Stack:")
+      # helpers.prettyPrint(self.stack)
+      # print("Symbols")
+      # for x in self.symbols:
+      #   print ''
+      #   print 'symbol {}:'.format(x)
+      #   print self.symbols[x].derive()
+      # print ''
 
       #gasCost = gasCost + calculateGasCost(item[0])
-      i += 1
-      stop = i >= len(items)
-    print("Stack:")
-    helpers.prettyPrint(stack)
-    print("Memory:")
-    helpers.prettyPrint(memory)
-    print("Storage:")
-    helpers.prettyPrint(storage)
+      self.instrPtr = item[-1]
+      stop = self.instrPtr >= len(self.opcodes)
+    # print("Stack:")
+    # helpers.prettyPrint(self.stack)
+    # print("Memory:")
+    # helpers.prettyPrint(self.memory)
+    # print("Storage:")
+    # helpers.prettyPrint(self.storage)
 
-    for x in symbols:
-      print ''
-      print 'symbol {}:'.format(x)
-      print symbols[x].derive()
+    # for x in self.symbols:
+    #   print ''
+    #   print 'symbol {}:'.format(x)
+    #   print self.symbols[x].derive()
+    pathSymbols.append(self.symbols)
+    return []
 

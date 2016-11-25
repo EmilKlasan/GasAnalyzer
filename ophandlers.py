@@ -3,17 +3,45 @@ import ctypes
 from symbolicinput import SymbolicInput
 from math import copysign
 
-symId = -1
-
 ################### JUMP OPS #####################
 
-def handleJumpOps(op, stack, items, symbols):
+def handleJumpOps(op, stack, items, symbols, symId):
   adr = stack.pop()
   out = (-1, False)
-  if op == "JUMP" or (op == "JUMPI" and int(stack.pop(), 16)):
+  if op == "JUMP":
     #jump to adr
-    out = jumpToLoc(adr, items)
+    return jumpToLoc(adr, items)
+    # if adr < 0:
+    #   symbAdrJump(adr, 'Jump')
+    # else:
+    #   return jumpToLoc(adr, items)
+  if op == "JUMPI":
+    cond = stack.pop()
+    if cond > 0:
+      return jumpToLoc(adr, items)
+    elif cond < 0:
+      return symbAdrJump(cond, adr, symbols, items, symId)
   return out
+
+def symbAdrJump(condition, address, symbols, items, symId):
+  # if condition is symbolic, need to split paths
+  sym = symbols[condition]
+  del symbols[condition]
+  # same for both paths
+  x = SymbolicInput(symId[0], "IsZero", sym, address)
+  symbols[symId[0]] = x
+  symId[0] -= 1
+  # tell path to split
+  return (x.getId(), jumpToLoc(address, items)), -1
+
+def makeJump(x, symbols, symId):
+  # i.e. condition is not zero
+  # new symbol mapping, because
+  sym = symbols[x]
+  del symbols[x]
+  newSym = SymbolicInput(symId[0], "Not", sym)
+  symbols[symId[0]] = newSym
+  symId[0] -= 1
 
 def jumpToLoc(adr, items):
   try:
@@ -23,14 +51,14 @@ def jumpToLoc(adr, items):
   return x, not isValidJumpTarget(x, items)
 
 def isValidJumpTarget(loc, items):
-  return loc not in invalidTargets and\
+  return loc not in invalidTargets and \
          helpers.convert(items[loc][0])[0] == "JUMPDEST"
 
 invalidTargets = [2]
 
 ############### ARITHMETIC OPS #################
 
-def handleArithOps(item, stack, symbols):
+def handleArithOps(item, stack, symbols, symId):
   params = []
   for i in range(item[1]):
     p = stack.pop()
@@ -41,16 +69,16 @@ def handleArithOps(item, stack, symbols):
   if params[0] > 0 and params[1] > 0:
     # if there are 3 params and the 3rd one is a symbol
     if len(params) == 3 and params[2] < 0:
-      func = arithMapSym(item[0])
-      stack.append(func(params, symbols))
+      func = arithMapSym[item[0]]
+      stack.append(func(params, symbols, symId))
     else:
       func = arithMap[item[0]]
       stack.append(helpers.toHex(func(params)))
   else:
     func = arithMapSym[item[0]]
-    stack.append(func(params, symbols))
+    stack.append(func(params, symbols, symId))
 
-def signedDiv(params, symbols):
+def signedDiv(params, symbols, symId = -1):
   x = params[0]
   y = params[1]
   if not y:
@@ -60,7 +88,7 @@ def signedDiv(params, symbols):
   else:
     return copysign(abs(x / y), x / y)
 
-def signedMod(params, symbols):
+def signedMod(params, symbols, symId = -1):
   x = params[0]
   y = params[1]
   if y:
@@ -68,15 +96,14 @@ def signedMod(params, symbols):
   return y
 
 # need to check if this works
-def signExtend(params, symbols):
+def signExtend(params, symbols, symId = -1):
   x = params[0]
   i = params[1]
   sign_bit = 1 << (i - 1)
   return (x & (sign_bit - 1)) - (x & sign_bit)
 
 # Simple 2 argument operations involving symbols
-def param2Simple(op, params, symbols):
-  global symId
+def param2Simple(op, params, symbols, symId):
   if params[0] < 0:
     p0 = symbols[params[0]]
     del symbols[params[0]]
@@ -89,27 +116,25 @@ def param2Simple(op, params, symbols):
   else:
     p1 = params[1]
 
-  x = SymbolicInput(symId, op, p0, p1)
-  symbols[symId] = x
-  symId -= 1
+  x = SymbolicInput(symId[0], op, p0, p1)
+  symbols[symId[0]] = x
+  symId[0] -= 1
   return x.getId()
 
-def param1Simple(op, params, symbols):
-  global symId
+def param1Simple(op, params, symbols, symId):
   if params[0] < 0:
     p0 = symbols[params[0]]
     del symbols[params[0]]
   else:
     p0 = params[0]
 
-  x = SymbolicInput(symId, op, p0, None)
-  symbols[symId] = x
-  symId -= 1
+  x = SymbolicInput(symId[0], op, p0, None)
+  symbols[symId[0]] = x
+  symId[0] -= 1
   return x.getId()
 
 # Functions that take in 3 args for mods: add mod and mul mod
-def mod3Arith(op, params, symbols):
-  global symId
+def mod3Arith(op, params, symbols, symId):
 
   # Get result of first operation
   if params[0] or params[1] < 0:
@@ -125,9 +150,9 @@ def mod3Arith(op, params, symbols):
   else:
     p3 = params[2]
 
-  x = SymbolicInput(symId, 'Mod', p1p2, p3)
-  symbols[symId] = x
-  symId -= 1
+  x = SymbolicInput(symId[0], 'Mod', p1p2, p3)
+  symbols[symId[0]] = x
+  symId[0] -= 1
   return x.getId()
 
 # If no symbols
@@ -147,14 +172,14 @@ arithMap = {
 
 # If there's a symbol
 arithMapSym = {
-  "ADD":        lambda params, symbols: param2Simple('Add', params, symbols),
-  "MUL":        lambda params, symbols: param2Simple('Mul', params, symbols),
-  "SUB":        lambda params, symbols: param2Simple('Sub', params, symbols),
-  "DIV":        lambda params, symbols: param2Simple('Div', params, symbols),
-  "MOD":        lambda params, symbols: param2Simple('Mod', params, symbols),
-  "ADDMOD":     lambda params, symbols: mod3Arith('Add', params, symbols),
-  "MULMOD":     lambda params, symbols: mod3Arith('Mul', params, symbols),
-  "EXP":        lambda params, symbols: param2Simple('Exp', params, symbols),
+  "ADD":        lambda params, symbols, symId: param2Simple('Add', params, symbols, symId),
+  "MUL":        lambda params, symbols, symId: param2Simple('Mul', params, symbols, symId),
+  "SUB":        lambda params, symbols, symId: param2Simple('Sub', params, symbols, symId),
+  "DIV":        lambda params, symbols, symId: param2Simple('Div', params, symbols, symId),
+  "MOD":        lambda params, symbols, symId: param2Simple('Mod', params, symbols, symId),
+  "ADDMOD":     lambda params, symbols, symId: mod3Arith('Add', params, symbols, symId),
+  "MULMOD":     lambda params, symbols, symId: mod3Arith('Mul', params, symbols, symId),
+  "EXP":        lambda params, symbols, symId: param2Simple('Exp', params, symbols, symId),
   "SDIV":       signedDiv,
   "SMOD":       signedMod,
   "SIGNEXTEND": signExtend
@@ -165,7 +190,7 @@ arithMapSym = {
 def makeUnsigned256(i):
     return ctypes.c_ubyte(i).value
 
-def handleBoolOp(item, stack, symbols):
+def handleBoolOp(item, stack, symbols, symId):
   params = []
   for i in range(item[1]):
     p = stack.pop()
@@ -178,7 +203,7 @@ def handleBoolOp(item, stack, symbols):
   if len(params) == 1:
     if params[0] < 0:
       func = boolMapSym[item[0]]
-      stack.append(func(params, symbols))
+      stack.append(func(params, symbols, symId))
     else:
       func = boolMap[item[0]]
       stack.append(helpers.toHex(func(params)))
@@ -187,10 +212,9 @@ def handleBoolOp(item, stack, symbols):
     stack.append(helpers.toHex(func(params)))
   else:
     func = boolMapSym[item[0]]
-    stack.append(func(params, symbols))
+    stack.append(func(params, symbols, symId))
 
-def ltgt(op, params, symbols):
-  global symId
+def ltgt(op, params, symbols, symId):
   if params[0] < 0:
     p0 = symbols[params[0]]
     del symbols[params[0]]
@@ -205,9 +229,9 @@ def ltgt(op, params, symbols):
     p1 = params[1]
     makeUnsigned256(p1)
 
-  x = SymbolicInput(symId, op, p0, p1)
-  symbols[symId] = x
-  symId -= 1
+  x = SymbolicInput(symId[0], op, p0, p1)
+  symbols[symId[0]] = x
+  symId[0] -= 1
   return x.getId()
 
 # Boolmap for normal operations
@@ -227,24 +251,23 @@ boolMap = {
 
 # Boolmap for operations with symbols
 boolMapSym = {
-  "LT":     lambda params, symbols: ltgt('Lt', params, symbols),
-  "GT":     lambda params, symbols: ltgt('Gt', params, symbols),
-  "SLT":    lambda params: params[0] < params[1], #TODO
-  "SGT":    lambda params: params[0] > params[1], #TODO
-  "EQ":     lambda params, symbols: param2Simple('Eq', params, symbols),
-  "ISZERO": lambda params, symbols: param1Simple('IsZero', params, symbols),
-  "AND":    lambda params, symbols: param2Simple('And', params, symbols),
-  "OR":     lambda params, symbols: param2Simple('Or', params, symbols),
-  "XOR":    lambda params, symbols: param2Simple('Xor', params, symbols),
-  "NOT":    lambda params, symbols: param1Simple('Not', params, symbols),
-  "BYTE":   lambda params, symbols: (params[1] >> (8 * params[0])) & 0xFF #TODO
+  "LT":     lambda params, symbols, symId: ltgt('Lt', params, symbols, symId),
+  "GT":     lambda params, symbols, symId: ltgt('Gt', params, symbols, symId),
+  "SLT":    lambda params, symbols, symId: params[0] < params[1], #TODO
+  "SGT":    lambda params, symbols, symId: params[0] > params[1], #TODO
+  "EQ":     lambda params, symbols, symId: param2Simple('Eq', params, symbols, symId),
+  "ISZERO": lambda params, symbols, symId: param1Simple('IsZero', params, symbols, symId),
+  "AND":    lambda params, symbols, symId: param2Simple('And', params, symbols, symId),
+  "OR":     lambda params, symbols, symId: param2Simple('Or', params, symbols, symId),
+  "XOR":    lambda params, symbols, symId: param2Simple('Xor', params, symbols, symId),
+  "NOT":    lambda params, symbols, symId: param1Simple('Not', params, symbols, symId),
+  "BYTE":   lambda params, symbols, symId: (params[1] >> (8 * params[0])) & 0xFF #TODO
 }
 
 ################ ENVIRONMENTAL OPS ##############
 
-def handleEnvOps(item, stack, memory, symbols, userIn):
+def handleEnvOps(item, stack, memory, symbols, userIn, symId):
   #func = envMap[item[0]]
-  global symId
   params = []
   for i in range(item[1]):
     p = stack.pop()
@@ -253,13 +276,25 @@ def handleEnvOps(item, stack, memory, symbols, userIn):
     else:
       params.insert(0, p)
   if item[2] == 1:
-    x = SymbolicInput(symId, 'id', None)
-    symbols[symId] = x
-    stack.append(symId)
-    userIn.append(symId)
-    symId -= 1
+    x = SymbolicInput(symId[0], 'id', None)
+    symbols[symId[0]] = x
+    stack.append(symId[0])
+    userIn.append(symId[0])
+    symId[0] -= 1
   #stack.append(helpers.toHex(func(params)))
 
+############### DUP #############
+
+def handleDupOp(op, symbols, stack, symId):
+  num = int(op[3:])
+  val = stack[-num]
+  if val < 0:
+    sym = symbols[val]
+    x = SymbolicInput(symId[0], 'Dup', sym)
+    symbols[symId[0]] = x
+    symId[0] -= 1
+  else:
+    stack.append(val)
 
 ################ BLOCK OPS #################
 
