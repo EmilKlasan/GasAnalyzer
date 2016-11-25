@@ -27,20 +27,20 @@ def main():
   steps     = 0;
   pathSymbols = []
   while paths and steps < 500:
-    for path in paths:
-      out = path.traverse(pathSymbols)
-      for x in out:
-        paths.append(x)
-      del path
+    path = paths.pop()
+    out = path.traverse(pathSymbols)
+    for x in out:
+      paths.append(x)
+    print(len(paths))
     steps += 1
 
-  count = 1
-  for symbs in pathSymbols:
-    print('For path {}'.format(count))
-    for x in symbs:
-      print 'symbol {}: {}'.format(x, symbs[x].derive())
-    print ''
-    count += 1
+  # count = 1
+  # for symbs in pathSymbols:
+  #   print('For path {}'.format(count))
+  #   for x in symbs:
+  #     print 'symbol {}: {}'.format(x, symbs[x].derive())
+  #   print ''
+  #   count += 1
 
 if __name__ == "__main__":
     main()

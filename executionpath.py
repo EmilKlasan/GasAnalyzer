@@ -26,7 +26,7 @@ class ExecutionPath:
   def takeJumpPath(self, pair, symbols):
     # negate isZero, set new symbol, check/return for jumpdest
     self.instrPtr = pair[1][0]
-    return ophandlers.makeJump(pair[0], symbols, self.symId)
+    ophandlers.makeJump(pair[0], symbols, self.symId)
 
   def traverse(self, pathSymbols):
     gasCost = 0
@@ -72,7 +72,6 @@ class ExecutionPath:
           continue
         elif result[1] == -1:
           # symbolic, need to split
-          self.instrPtr = item[-1]
           # pass path-specific parameters by value
           ep1 = ExecutionPath(self.opcodes,
                               self.functions,
@@ -82,13 +81,10 @@ class ExecutionPath:
                               deepcopy(self.symbols),
                               self.userIn[:],
                               self.instrPtr)
-          stop = ep1.takeJumpPath(result[0], self.symbols)
-          if stop:
-            return [self]
-          else:
-            # print(self.instrPtr)
-            print("splitting")
-            return [self, ep1]
+          ep1.takeJumpPath(result[0], self.symbols)
+          self.instrPtr = item[-1]
+          print("splitting")
+          return [self, ep1]
       elif op in oplists.memOps:
         ophandlers.handleMemoryOps(item,
                                    self.stack,
@@ -110,10 +106,11 @@ class ExecutionPath:
         # push value to stack
         self.stack.append(op[7:])
       elif op[:3] == "DUP":
-        ophandlers.handleDupOp(op,
-                               self.symbols,
-                               self.stack,
-                               self.symId)
+        on = ophandlers.handleDupOp(op,
+                                    self.symbols,
+                                    self.stack,
+                                    self.symId)
+        self.stack.append(on)
       elif op[:4] == "SWAP":
         num         = int(op[4:])
         tmp         = self.stack[-num]
@@ -135,7 +132,7 @@ class ExecutionPath:
 
       #gasCost = gasCost + calculateGasCost(item[0])
       self.instrPtr = item[-1]
-      stop = self.instrPtr >= len(self.opcodes)
+      stop = self.instrPtr == -1
     # print("Stack:")
     # helpers.prettyPrint(self.stack)
     # print("Memory:")

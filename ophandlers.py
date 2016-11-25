@@ -63,10 +63,10 @@ def handleArithOps(item, stack, symbols, symId):
   for i in range(item[1]):
     p = stack.pop()
     if p >= 0:
-      params.insert(0, int(p, 16))
+      params.append(int(p, 16))
     else:
-      params.insert(0, p)
-  if params[0] > 0 and params[1] > 0:
+      params.append(p)
+  if params[0] >= 0 and params[1] >= 0:
     # if there are 3 params and the 3rd one is a symbol
     if len(params) == 3 and params[2] < 0:
       func = arithMapSym[item[0]]
@@ -195,9 +195,9 @@ def handleBoolOp(item, stack, symbols, symId):
   for i in range(item[1]):
     p = stack.pop()
     if p >= 0:
-      params.insert(0, int(p, 16))
+      params.append(int(p, 16))
     else:
-      params.insert(0, p)
+      params.append(p)
 
   # if only one arg
   if len(params) == 1:
@@ -293,8 +293,9 @@ def handleDupOp(op, symbols, stack, symId):
     x = SymbolicInput(symId[0], 'Dup', sym)
     symbols[symId[0]] = x
     symId[0] -= 1
+    return x.getId()
   else:
-    stack.append(val)
+    return val
 
 ################ BLOCK OPS #################
 
