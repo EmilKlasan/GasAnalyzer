@@ -31,10 +31,9 @@ def main():
     out = path.traverse(pathSymbols)
     for x in out:
       paths.append(x)
-    print(len(paths))
     steps += 1
 
-  pathNum = 0
+  pathNum = 1
   for symbs in pathSymbols:
     count = [0]
     print('For path {}'.format(pathNum))

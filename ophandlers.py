@@ -43,12 +43,8 @@ def makeJump(x, symbols, symId):
   symbols[symId[0]] = newSym
   symId[0] -= 1
 
-def jumpToLoc(adr, items):
-  try:
-    x = int(adr, 16)
-  except TypeError:
-    return -1, False
-  return x, not isValidJumpTarget(x, items)
+def jumpToLoc(adr, items): 
+  return adr, not isValidJumpTarget(adr, items)
 
 def isValidJumpTarget(loc, items):
   return loc not in invalidTargets and \
@@ -62,10 +58,7 @@ def handleArithOps(item, stack, symbols, symId):
   params = []
   for i in range(item[1]):
     p = stack.pop()
-    if p >= 0:
-      params.append(int(p, 16))
-    else:
-      params.append(p)
+    params.append(p)
   if params[0] >= 0 and params[1] >= 0:
     # if there are 3 params and the 3rd one is a symbol
     if len(params) == 3 and params[2] < 0:
@@ -194,10 +187,7 @@ def handleBoolOp(item, stack, symbols, symId):
   params = []
   for i in range(item[1]):
     p = stack.pop()
-    if p >= 0:
-      params.append(int(p, 16))
-    else:
-      params.append(p)
+    params.append(p)
 
   # if only one arg
   if len(params) == 1:
@@ -271,10 +261,7 @@ def handleEnvOps(item, stack, memory, symbols, userIn, symId):
   params = []
   for i in range(item[1]):
     p = stack.pop()
-    if p >= 0:
-      params.insert(0, int(p, 16))
-    else:
-      params.insert(0, p)
+    params.insert(0, p)
   if item[2] == 1:
     x = SymbolicInput(symId[0], 'id', None)
     symbols[symId[0]] = x

@@ -104,7 +104,7 @@ class ExecutionPath:
         self.stack.append(i)
       elif op[:4] == "PUSH":
         # push value to stack
-        self.stack.append(op[7:])
+        self.stack.append(int(op[7:], 16))
       elif op[:3] == "DUP":
         on = ophandlers.handleDupOp(op,
                                     self.symbols,

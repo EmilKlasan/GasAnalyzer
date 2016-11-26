@@ -3,6 +3,13 @@ import evmmaps
 
 ############### HELPER FUNCTIONS #################
 
+def isInt(val):
+  try:
+    int(val)
+    return True
+  except (ValueError, AttributeError, TypeError):
+    return False
+
 def toHex(val):
   return "%x" % val
 

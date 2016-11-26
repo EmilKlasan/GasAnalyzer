@@ -1,3 +1,5 @@
+from helpers import isInt
+
 class SymbolicInput:
 
   # id of sym, operation that made it, the argument that came with the operation
