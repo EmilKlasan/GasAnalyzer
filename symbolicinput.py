@@ -16,7 +16,7 @@ class SymbolicInput:
   def generateOp(self, op, arg1, arg2):
     return {
       # Represents the base symbol, used when reading user input
-      'id': ('id', self.symId, arg1),
+      'id': ('id', self.symId, arg1, arg2),
 
       # Other
       'Dup': ('Dup', arg1),
@@ -45,7 +45,7 @@ class SymbolicInput:
     opChain = self.opChain
     if opChain[0] == 'id':
       count[0] += 1
-      return 'x{}'.format(count[0])
+      return '{}[{}]'.format(opChain[2], opChain[-1])
       # return 'id(sym: {0}, uid: {1})'.format(self.opChain[1],self.opChain[2])
 
     arg1 = ''

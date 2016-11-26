@@ -256,14 +256,14 @@ boolMapSym = {
 
 ################ ENVIRONMENTAL OPS ##############
 
-def handleEnvOps(item, stack, memory, symbols, userIn, symId):
+def handleEnvOps(item, stack, memory, symbols, userIn, symId, iP):
   #func = envMap[item[0]]
   params = []
   for i in range(item[1]):
     p = stack.pop()
     params.insert(0, p)
   if item[2] == 1:
-    x = SymbolicInput(symId[0], 'id', None)
+    x = SymbolicInput(symId[0], 'id', item[0], iP)
     symbols[symId[0]] = x
     stack.append(symId[0])
     userIn.append(symId[0])

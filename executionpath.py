@@ -33,10 +33,12 @@ class ExecutionPath:
     stop    = False
     while not stop:
       if self.instrPtr == 2:
+        print('exiting on error')
         break
       item = self.opcodes[self.instrPtr]
       op   = item[0]
       if op in oplists.terminalOps:
+        print('normal exit')
         break
       elif op in oplists.arithOps:
         ophandlers.handleArithOps(item,
@@ -56,7 +58,8 @@ class ExecutionPath:
                                 self.memory,
                                 self.symbols,
                                 self.userIn,
-                                self.symId)
+                                self.symId,
+                                self.instrPtr)
       elif op in oplists.blockOps:
         ophandlers.handleBlockOps(item,
                                   self.stack,
