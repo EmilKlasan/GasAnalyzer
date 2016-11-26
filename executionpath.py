@@ -32,10 +32,11 @@ class ExecutionPath:
     gasCost = 0
     stop    = False
     while not stop:
-      if self.instrPtr == 2:
-        print('exiting on error')
+      try:
+        item = self.opcodes[self.instrPtr]
+      except KeyError:
+        print('exiting on error (key {} invalid)'.format(self.instrPtr))
         break
-      item = self.opcodes[self.instrPtr]
       op   = item[0]
       if op in oplists.terminalOps:
         print('normal exit')
@@ -65,11 +66,11 @@ class ExecutionPath:
                                   self.stack,
                                   self.symbols)
       elif op in oplists.jumpOps:
-        result  = ophandlers.handleJumpOps(op,
-                                           self.stack,
-                                           self.opcodes,
-                                           self.symbols,
-                                           self.symId)
+        result = ophandlers.handleJumpOps(op,
+                                          self.stack,
+                                          self.opcodes,
+                                          self.symbols,
+                                          self.symId)
         if result[0] != -1 and result[1] != -1:
           self.instrPtr, stop = result
           continue

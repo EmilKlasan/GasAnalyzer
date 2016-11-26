@@ -47,10 +47,10 @@ def jumpToLoc(adr, items):
   return adr, not isValidJumpTarget(adr, items)
 
 def isValidJumpTarget(loc, items):
-  return loc not in invalidTargets and \
-         helpers.convert(items[loc][0])[0] == "JUMPDEST"
-
-invalidTargets = [2]
+  try:
+    return helpers.convert(items[loc][0])[0] == "JUMPDEST"
+  except KeyError:
+    return False
 
 ############### ARITHMETIC OPS #################
 
