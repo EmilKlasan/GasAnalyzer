@@ -123,10 +123,10 @@ class ExecutionPath:
       elif op[:3] == "LOG":
         pass
 
-      # print(self)
-      # print item
-      # print("Stack:")
-      # helpers.prettyPrint(self.stack)
+      print(self)
+      print item
+      print("Stack:")
+      helpers.prettyPrint(self.stack)
       # print("Symbols")
       # for x in self.symbols:
       #   print ''

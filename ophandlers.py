@@ -48,7 +48,7 @@ def jumpToLoc(adr, items):
 
 def isValidJumpTarget(loc, items):
   try:
-    return helpers.convert(items[loc][0])[0] == "JUMPDEST"
+    return items[loc][0] == "JUMPDEST"
   except KeyError:
     return False
 
