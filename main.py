@@ -28,15 +28,20 @@ def main():
   pathSymbols = []
   while paths and steps < 500:
     path = paths.pop()
-    out = path.traverse(pathSymbols)
-    for x in out:
+    outList, p = path.traverse()
+    for x in outList:
       paths.append(x)
+    if not outList:
+      pathSymbols.append(p)
     steps += 1
 
   pathNum = 1
-  for symbs in pathSymbols:
+  for path in pathSymbols:
+    symbs = path.symbols
+    gasCost = path.gasCost
     count = [0]
     print('For path {}'.format(pathNum))
+    print('Gas Cost {}'.format(gasCost))
     for x in symbs:
       print 'x{}: {}'.format(count[0] + 1, symbs[x].derive(count))
     print ''

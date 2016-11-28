@@ -1,6 +1,7 @@
 import helpers
 import ophandlers
 import oplists
+import gas
 from copy import deepcopy
 
 class ExecutionPath:
@@ -12,7 +13,8 @@ class ExecutionPath:
                      symbols  = {},
                      userIn   = [],
                      instrPtr = 1,
-                     symId    = [-1]):
+                     symId    = [-1],
+                     gasCost  = 0):
     self.opcodes   = opcodes
     self.functions = functions
     self.stack     = stack
@@ -22,14 +24,14 @@ class ExecutionPath:
     self.userIn    = userIn  # list of symbols that directly represent user input
     self.instrPtr  = instrPtr # instruction pointer
     self.symId     = symId
+    self.gasCost   = gasCost
 
   def takeJumpPath(self, pair, symbols):
     # negate isZero, set new symbol, check/return for jumpdest
     self.instrPtr = pair[1][0]
     ophandlers.makeJump(pair[0], symbols, self.symId)
 
-  def traverse(self, pathSymbols):
-    gasCost = 0
+  def traverse(self):
     stop    = False
     while not stop:
       try:
@@ -39,21 +41,26 @@ class ExecutionPath:
         break
       op   = item[0]
       if op in oplists.terminalOps:
+        self.gasCost += gas.calculateGas(op, self.stack, self.memory)
         print('normal exit')
         break
       elif op in oplists.arithOps:
+        self.gasCost += gas.calculateGas(op, self.stack, self.memory)
         ophandlers.handleArithOps(item,
                                   self.stack,
                                   self.symbols,
                                   self.symId)
       elif op in oplists.boolOps:
+        self.gasCost += gas.calculateGas(op, self.stack, self.memory)
         ophandlers.handleBoolOp(item,
                                 self.stack,
                                 self.symbols,
                                 self.symId)
       elif op == "SHA3":
+        self.gasCost += gas.calculateGas(op, self.stack, self.memory)
         pass
       elif op in oplists.envOps:
+        self.gasCost += gas.calculateGas(op, self.stack, self.memory)
         ophandlers.handleEnvOps(item,
                                 self.stack,
                                 self.memory,
@@ -62,10 +69,12 @@ class ExecutionPath:
                                 self.symId,
                                 self.instrPtr)
       elif op in oplists.blockOps:
+        self.gasCost += gas.calculateGas(op, self.stack, self.memory)
         ophandlers.handleBlockOps(item,
                                   self.stack,
                                   self.symbols)
       elif op in oplists.jumpOps:
+        self.gasCost += gas.calculateGas(op, self.stack, self.memory)
         result = ophandlers.handleJumpOps(op,
                                           self.stack,
                                           self.opcodes,
@@ -84,43 +93,54 @@ class ExecutionPath:
                               deepcopy(self.storage),
                               deepcopy(self.symbols),
                               self.userIn[:],
-                              self.instrPtr)
+                              self.instrPtr,
+                              self.symId,
+                              self.gasCost)
           ep1.takeJumpPath(result[0], self.symbols)
           self.instrPtr = item[-1]
           print("splitting")
-          return [self, ep1]
+          return ([self, ep1], self)
       elif op in oplists.memOps:
+        self.gasCost += gas.calculateGas(op, self.stack, self.memory)
         ophandlers.handleMemoryOps(item,
                                    self.stack,
                                    self.memory,
                                    self.symbols)
       elif op in oplists.storOps:
+        self.gasCost += gas.calculateGas(op, self.stack, self.memory)
         ophandlers.handleStorageOps(item,
                                     self.stack,
                                     self.storage,
                                     self.symbols,
                                     self.userIn)
       elif op == "JUMPDEST":
+        self.gasCost += gas.calculateGas(op, self.stack, self.memory)
         pass
       elif op == "POP":
+        self.gasCost += gas.calculateGas(op, self.stack, self.memory)
         self.stack.pop()
       elif op == "PC":
+        self.gasCost += gas.calculateGas(op, self.stack, self.memory)
         self.stack.append(i)
       elif op[:4] == "PUSH":
         # push value to stack
+        self.gasCost += gas.calculateGas(op[:4], self.stack, self.memory)
         self.stack.append(int(op[7:], 16))
       elif op[:3] == "DUP":
+        self.gasCost += gas.calculateGas(op[:3], self.stack, self.memory)
         on = ophandlers.handleDupOp(op,
                                     self.symbols,
                                     self.stack,
                                     self.symId)
         self.stack.append(on)
       elif op[:4] == "SWAP":
+        self.gasCost += gas.calculateGas(op[:4], self.stack, self.memory)
         num         = int(op[4:])
         tmp         = self.stack[-num]
         self.stack[-num] = self.stack[-1]
         self.stack[-1]   = tmp
       elif op[:3] == "LOG":
+        self.gasCost += gas.calculateGas(op, self.stack, self.memory)
         pass
 
       print(self)
@@ -148,6 +168,5 @@ class ExecutionPath:
     #   print ''
     #   print 'symbol {}:'.format(x)
     #   print self.symbols[x].derive()
-    pathSymbols.append(self.symbols)
-    return []
+    return ([], self)
 

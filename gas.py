@@ -17,32 +17,31 @@ debug = False
 # TODO: Calls, SUicide, Sstore
 def calculateGas(opCode, stack, memory):
   gasCost = -1
-
   # We consider ops with tiers first, then we move into the unranked
   # Tier costs, if the op belongs to any tiers
   if opCode in evmmaps.wzero:
     gasCost = evmmaps.gasToPrices['GZERO']
   elif opCode in evmmaps.wbase:
-    gasCost += evmmaps.gasToPrices['GBASE']
+    gasCost = evmmaps.gasToPrices['GBASE']
   elif opCode in evmmaps.wverylow:
-    gasCost += evmmaps.gasToPrices['GVERYLOW']
+    gasCost = evmmaps.gasToPrices['GVERYLOW']
   elif opCode in evmmaps.wlow:
-    gasCost += evmmaps.gasToPrices['GLOW']
+    gasCost = evmmaps.gasToPrices['GLOW']
   elif opCode in evmmaps.wmid:
-    gasCost += evmmaps.gasToPrices['GMID']
+    gasCost = evmmaps.gasToPrices['GMID']
   elif opCode in evmmaps.whigh:
-    gasCost += evmmaps.gasToPrices['GHIGH']
+    gasCost = evmmaps.gasToPrices['GHIGH']
   elif opCode in evmmaps.wextcode:
-    gasCost += evmmaps.gasToPrices['GEXTCODE']
+    gasCost = evmmaps.gasToPrices['GEXTCODE']
 
   if opCode == 'SLOAD':
-    gasCost += evmmaps.gasToPrices['GSLOAD']
+    gasCost = evmmaps.gasToPrices['GSLOAD']
   elif opCode == 'BALANCE':
-    gasCost += evmmaps.gasToPrices['GBALANCE']
+    gasCost = evmmaps.gasToPrices['GBALANCE']
   elif opCode == 'JUMPDEST':
-    gasCost += evmmaps.gasToPrices['GJUMPDEST']
+    gasCost = evmmaps.gasToPrices['GJUMPDEST']
   elif opCode == 'BLOCKHASH':
-    gasCost += evmmaps.gasToPrices['GBLOCKHASH']
+    gasCost = evmmaps.gasToPrices['GBLOCKHASH']
   # SSTORE and SUICIDE have some nuances, will look at later
 
   # Ops that interact with memory
@@ -88,7 +87,7 @@ def calculateGas(opCode, stack, memory):
   # signed exponents in ethereum?
   elif opCode == 'EXP':
     if stack[-2] == 0:
-      gasCost += evmmaps.gasToPrices['GEXP']
+      gasCost == evmmaps.gasToPrices['GEXP']
     elif stack[-2] > 0:
       gasCost += evmmaps.gasToPrices['GEXP'] + evmmaps.gasToPrices['GEXPBYTE'] * (1 + int(log(stack[-2], 256)))
 
@@ -108,10 +107,11 @@ def calcMemGas(oldMem, newMem, copySize):
   # Then see if we actually need to allocate anything
   # If we do, then we calculate the cost based on the function in the yellow paper
   # which is: CMem(a) = GMem * a + a ** 2 / 512
+  oldMemUse = ((oldMem + 31) / 32 ) * 32
   memUse = ((newMem + 31) / 32 ) * 32
   if memUse > oldMem:
     memWords = memUse / 32
-    oldMemWords = oldMem / 32
+    oldMemWords = oldMemUse / 32
     newMemCost = (evmmaps.gasToPrices['GMEMORY'] * memWords + (memWords ** 2) / 512)
     oldMemCost = (evmmaps.gasToPrices['GMEMORY'] * oldMemWords + (oldMemWords ** 2) / 512)
     if debug:

@@ -169,8 +169,8 @@ wbase = set(['ADDRESS', 'ORIGIN', 'CALLER', 'CALLVALUE', 'CALLDATASIZE', 'CODESI
        'POP', 'PC', 'MSIZE', 'GAS'])
 
 wverylow = set(['ADD', 'SUB', 'NOT', 'LT', 'GT', 'SLT', 'SGT', 'EQ', 'ISZERO', 'AND',
-        'OR', 'XOR', 'BYTE', 'CALLDATALOAD', 'MLOAD', 'MSTORE', 'MSTORES'])
-for i in range(1,33):
+        'OR', 'XOR', 'BYTE', 'CALLDATALOAD', 'MLOAD', 'MSTORE', 'MSTORES', 'PUSH', 'SWAP', 'DUP'])
+for i in range(2,33):
   wverylow.add('PUSH'+str(i))
   if i <= 16:
     wverylow.add('DUP'+str(i))

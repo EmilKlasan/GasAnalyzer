@@ -131,7 +131,7 @@ def mod3Arith(op, params, symbols, symId):
 
   # Get result of first operation
   if params[0] or params[1] < 0:
-    sid = param2Simple(op, params[:2], symbols)
+    sid = param2Simple(op, params[:2], symbols, symId)
     p1p2 = symbols[sid]
     del symbols[sid]
   else:
