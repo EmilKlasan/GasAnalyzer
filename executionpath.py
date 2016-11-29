@@ -143,10 +143,10 @@ class ExecutionPath:
         self.gasCost += gas.calculateGas(op, self.stack, self.memory)
         pass
 
-      print(self)
-      print item
-      print("Stack:")
-      helpers.prettyPrint(self.stack)
+      # print(self)
+      # print item
+      # print("Stack:")
+      # helpers.prettyPrint(self.stack)
       # print("Symbols")
       # for x in self.symbols:
       #   print ''
