@@ -26,10 +26,10 @@ class ExecutionPath:
     self.symId     = symId
     self.gasCost   = gasCost
 
-  def takeJumpPath(self, pair, symbols):
+  def takeJumpPath(self, pair):
     # negate isZero, set new symbol, check/return for jumpdest
     self.instrPtr = pair[1][0]
-    ophandlers.makeJump(pair[0], symbols, self.symId)
+    ophandlers.makeJump(pair[0], self.symbols, self.symId)
 
   def traverse(self):
     stop    = False
@@ -96,9 +96,9 @@ class ExecutionPath:
                               self.instrPtr,
                               self.symId,
                               self.gasCost)
-          ep1.takeJumpPath(result[0], self.symbols)
+          ep1.takeJumpPath(result[0])
           self.instrPtr = item[-1]
-          print("splitting")
+          # print("splitting")
           return ([self, ep1], self)
       elif op in oplists.memOps:
         self.gasCost += gas.calculateGas(op, self.stack, self.memory)
@@ -144,9 +144,12 @@ class ExecutionPath:
         pass
 
       # print(self)
-      # print item
-      # print("Stack:")
-      # helpers.prettyPrint(self.stack)
+      print item
+      print("Stack:")
+      helpers.prettyPrint(self.stack)
+      print(self.gasCost)
+      for sym in self.symbols:
+        print(self.symbols[sym].derive([0]))
       # print("Symbols")
       # for x in self.symbols:
       #   print ''
