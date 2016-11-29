@@ -144,12 +144,12 @@ class ExecutionPath:
         pass
 
       # print(self)
-      print item
-      print("Stack:")
-      helpers.prettyPrint(self.stack)
-      print(self.gasCost)
-      for sym in self.symbols:
-        print(self.symbols[sym].derive([0]))
+      # print item
+      # print("Stack:")
+      # helpers.prettyPrint(self.stack)
+      # print(self.gasCost)
+      # for sym in self.symbols:
+      #   print(self.symbols[sym].derive([0]))
       # print("Symbols")
       # for x in self.symbols:
       #   print ''
